@@ -34,8 +34,6 @@ public class LoadingActivity extends Activity {
     private ProgressDialog dialog;
     public static SharedPreferences PUSH;
     public static SharedPreferences.Editor PUSH_EDIT;
-    public static SharedPreferences QMAP;
-    public static SharedPreferences.Editor QMAP_EDIT;
 
     protected volatile static UUID uuid;
 
@@ -51,8 +49,6 @@ public class LoadingActivity extends Activity {
         super.onResume();
         PUSH = getSharedPreferences("pushed", Activity.MODE_PRIVATE);
         PUSH_EDIT = PUSH.edit();
-        QMAP = getSharedPreferences("qmap", Activity.MODE_PRIVATE);
-        QMAP_EDIT = QMAP.edit();
 
         checkPermission();
     }
@@ -95,13 +91,8 @@ public class LoadingActivity extends Activity {
                     public void onDataChange(DataSnapshot dataSnapshot) {
                         for (DataSnapshot child : dataSnapshot.getChildren()) {
                             QMarker qMarker = child.getValue(QMarker.class);
-                            String temp = QMAP.getString(String.valueOf(qMarker.getKeynum()), "no");
-                            if (temp.equals("no")) {
-                                QMAP_EDIT.putString(String.valueOf(qMarker.getKeynum()), "false");
-                            }
                             q.add(qMarker);
                         }
-                        QMAP_EDIT.commit();
                         if (PUSH.getBoolean("ispush", false)) {
                             targetintent = new Intent(LoadingActivity.this, PushActivity.class);
                             Intent intent = getIntent();

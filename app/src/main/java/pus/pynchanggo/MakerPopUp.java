@@ -48,10 +48,11 @@ public class MakerPopUp extends Activity implements GestureDetector.OnGestureLis
     private static final int SWIPE_MIN_DISTANCE = 120;
     private static final int SWIPE_MAX_OFF_PATH = 250;
     private static final int SWIPE_THRESHOLD_VELOCITY = 200;
-    private  String isturn ="false";
 
     private GestureDetector gestureScanner;
     private  QMarker pick;
+    private Boolean turned =false;
+    private int turncount =0;
 
     public void onCreate(Bundle bundle){
         super.onCreate(bundle);
@@ -68,37 +69,10 @@ public class MakerPopUp extends Activity implements GestureDetector.OnGestureLis
         backview =(ImageView)findViewById(R.id.back);
         gestureScanner = new GestureDetector(this);
 
-        isturn =LoadingActivity.QMAP.getString(String.valueOf(pick.getKeynum()),null);
-        if(isturn!=null && !isturn.equals("false")){
-            frontview.setVisibility(View.GONE);
-            backview.setVisibility(View.VISIBLE);
-            tv_num.setText(isturn);
-        }
         tv_title.setText(pick.getName());
         tv_info.setText(pick.getInfo());
+        firebaseremind();
 
-        FirebaseDatabase firebaseDatabase = FirebaseDatabase.getInstance();
-        final DatabaseReference databaseReference = firebaseDatabase.getReference().child("cnt").child(String.valueOf(pick.getKeynum()));
-        databaseReference.addValueEventListener(
-                new ValueEventListener() {
-                    @Override
-                    public void onDataChange(DataSnapshot dataSnapshot) {
-                        QCnt p = dataSnapshot.getValue(QCnt.class);
-                        if(isturn.equals("false")){
-                            setremind(Integer.toString(p.inqueue.size()));
-                        }else{
-                            int me = Integer.valueOf(isturn);
-                            int qcnt=0;
-                            Iterator iterator = p.inqueue.keySet().iterator();
-                            while(iterator.hasNext()) {
-                                if(me > p.inqueue.get((String) iterator.next())) qcnt++;
-                            }
-                            setremind(Integer.toString(qcnt));
-                        }
-                    }
-                    @Override
-                    public void onCancelled(DatabaseError databaseError) {}
-                });
         btn_exit.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -106,42 +80,74 @@ public class MakerPopUp extends Activity implements GestureDetector.OnGestureLis
             }
         });
     }
-    public void setremind(String s){
-        tv_remind.setText(s+" 명 남았습니다.");
+
+    public void firebaseremind(){
+        FirebaseDatabase firebaseDatabase = FirebaseDatabase.getInstance();
+        final DatabaseReference databaseReference = firebaseDatabase.getReference().child("cnt").child(String.valueOf(pick.getKeynum()));
+        final String id = FirebaseInstanceId.getInstance().getToken();
+        databaseReference.addValueEventListener(
+                new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        QCnt p = dataSnapshot.getValue(QCnt.class);
+                        if(!p.inqueue.containsKey(id)){
+                            setremind(Integer.toString(p.inqueue.size()));
+                        }else{
+                            int me =  p.inqueue.get(id);
+                            int qcnt=0;
+                            Iterator iterator = p.inqueue.keySet().iterator();
+                            while(iterator.hasNext()) {
+                                if(me > p.inqueue.get((String) iterator.next())) qcnt++;
+                            }
+                            turned = true;
+                            turncount =me;
+                            setremind(Integer.toString(qcnt));
+                            setturn(Integer.toString(me));
+                        }
+                    }
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {}
+                });
     }
+
+    public void setremind(String s){
+        tv_remind.setText(s + " 명 남았습니다.");
+    }
+    public void setturn(String me){
+        frontview.setVisibility(View.GONE);
+        backview.setVisibility(View.VISIBLE);
+        tv_num.setText(me);
+    }
+
 
 
     public void upload(){
         FirebaseDatabase firebaseDatabase = FirebaseDatabase.getInstance();
-        final DatabaseReference databaseReference = firebaseDatabase.getReference().child("cnt").child(String.valueOf(pick.getKeynum()));
         final String id = FirebaseInstanceId.getInstance().getToken();
+        final DatabaseReference databaseReference = firebaseDatabase.getReference().child("cnt").child(String.valueOf(pick.getKeynum()));
+        final DatabaseReference df = firebaseDatabase.getReference().child("UserQueue").child(id).child(String.valueOf(pick.getKeynum()));
 
         databaseReference.runTransaction(new Transaction.Handler() {
             @Override
             public Transaction.Result doTransaction(MutableData mutableData) {
                 QCnt p = mutableData.getValue(QCnt.class);
-                if (p == null || id ==null) {
+                if (p == null || id == null) {
                     return Transaction.success(mutableData);
                 }
-                if (!p.inqueue.containsKey(id) && isturn.equals("false")) {
+                if (!p.inqueue.containsKey(id)) {
                     p.qcount++;
                     p.inqueue.put(id, p.qcount);
-                    isturn= String.valueOf(p.qcount);
-                    LoadingActivity.QMAP_EDIT.putString(String.valueOf(pick.getKeynum()), isturn);
-                    LoadingActivity.QMAP_EDIT.commit();
+                    turned = true;
+                    turncount = p.qcount;
                 }
                 mutableData.setValue(p);
+                df.setValue(p.qcount);
+
                 return Transaction.success(mutableData);
             }
 
             @Override
             public void onComplete(DatabaseError databaseError, boolean b, DataSnapshot dataSnapshot) {
-                // Transaction completed
-                if( !isturn.equals("false")){
-                    frontview.setVisibility(View.GONE);
-                    backview.setVisibility(View.VISIBLE);
-                    tv_num.setText(isturn);
-                }
                 Log.d("upload", "postTransaction:onComplete:" + databaseError);
             }
         });
@@ -164,7 +170,7 @@ public class MakerPopUp extends Activity implements GestureDetector.OnGestureLis
 
             // right to left swipe
             if (e1.getX() - e2.getX() > SWIPE_MIN_DISTANCE && Math.abs(velocityX) > SWIPE_THRESHOLD_VELOCITY) {
-                if(isturn.equals("false")){
+                if(!turned){
                     applyRotation(0f, 180f, 360f, 0f);
                     upload();
                 }else{
@@ -173,7 +179,7 @@ public class MakerPopUp extends Activity implements GestureDetector.OnGestureLis
             }
             // left to right swipe
             else if (e2.getX() - e1.getX() > SWIPE_MIN_DISTANCE && Math.abs(velocityX) > SWIPE_THRESHOLD_VELOCITY) {
-                if(isturn.equals("false")){
+                if(!turned){
                     applyRotation(0f, 180f, 360f, 0f);
                     upload();
                 }else{

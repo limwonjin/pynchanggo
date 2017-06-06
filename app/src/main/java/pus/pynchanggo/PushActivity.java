@@ -15,6 +15,7 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.iid.FirebaseInstanceId;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -28,7 +29,6 @@ public class PushActivity extends Activity {
     private ImageButton btn_exit;
     private ImageView frontview;
     private ImageView backview;
-    private String isturn = "false";
     private  ArrayList<QMarker> marker;
     private  ArrayList<TourInfo> info;
 
@@ -57,8 +57,6 @@ public class PushActivity extends Activity {
         tv_title.setTextColor(Color.parseColor("#000000"));
         tv_info.setTextColor(Color.parseColor("#000000"));
         tv_remind.setTextColor(Color.parseColor("#000000"));
-        isturn = LoadingActivity.QMAP.getString(String.valueOf(q.getKeynum()), null);
-        tv_num.setText(isturn);
 
         btn_exit.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -73,19 +71,20 @@ public class PushActivity extends Activity {
         });
 
         FirebaseDatabase firebaseDatabase = FirebaseDatabase.getInstance();
+        final String id = FirebaseInstanceId.getInstance().getToken();
         final DatabaseReference databaseReference = firebaseDatabase.getReference().child("cnt").child(String.valueOf(q.getKeynum()));
         databaseReference.addValueEventListener(
                 new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
                         QCnt p = dataSnapshot.getValue(QCnt.class);
-                        int me = Integer.valueOf(isturn);
+                        int me = Integer.valueOf(p.inqueue.get(id));
                         int qcnt = 0;
                         Iterator iterator = p.inqueue.keySet().iterator();
                         while (iterator.hasNext()) {
                             if (me > p.inqueue.get((String) iterator.next())) qcnt++;
                         }
-                        setremind(Integer.toString(qcnt));
+                        setremind(Integer.toString(qcnt),Integer.toString(me));
                     }
                     @Override
                     public void onCancelled(DatabaseError databaseError) {
@@ -95,7 +94,8 @@ public class PushActivity extends Activity {
 
     }
 
-    public void setremind(String s) {
+    public void setremind(String s, String num) {
         tv_remind.setText(s + " 명 남았습니다.");
+        tv_num.setText(num);
     }
 }

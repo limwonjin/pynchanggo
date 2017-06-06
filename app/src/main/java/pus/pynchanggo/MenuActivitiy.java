@@ -14,8 +14,12 @@ import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.TextView;
 
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.iid.FirebaseInstanceId;
 
 import org.json.JSONObject;
 
@@ -24,6 +28,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Vector;
 
 /**
@@ -35,39 +40,41 @@ public class MenuActivitiy extends Activity{
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_scroll);
-        Map<String, String> list = (Map<String,String>) LoadingActivity.QMAP.getAll();
+        FirebaseDatabase firebaseDatabase = FirebaseDatabase.getInstance();
+        final String id = FirebaseInstanceId.getInstance().getToken();
+        final DatabaseReference databaseReference = firebaseDatabase.getReference().child("UserQueue").child(id);
         Intent intent =getIntent();
-        ArrayList<QMarker> marker = (ArrayList < QMarker >)intent.getSerializableExtra("Mark");
-        int n= list.size();
+        final ArrayList<QMarker> marker = (ArrayList < QMarker >)intent.getSerializableExtra("Mark");
         final Vector<String> title =new Vector<>();
         final Vector<String> number =new Vector<>();
-        final Vector<Integer> index = new Vector<>();
-        for(int i=1;i<=n;i++){
-            String s =list.get(Integer.toString(i));
-             if(!s.equals("false")){
-                 title.add(marker.get(i-1).getName());
-                 number.add(s);
-                 index.add(i);
-             }
-        }
-        if(title.size()>0) {
-            adapter = new MyAdapter(getApplicationContext(), R.layout.activity_qscroll, title, number);
-            GridView gv = (GridView) findViewById(R.id.gridView);
-            gv.setAdapter(adapter);
-            gv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                @Override
-                public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+        adapter = new MyAdapter(getApplicationContext(), R.layout.activity_qscroll, title, number);
+        GridView gv = (GridView) findViewById(R.id.gridView);
+        gv.setAdapter(adapter);
 
-                    LoadingActivity.QMAP_EDIT.putString(Integer.toString(index.get(i)),"false");
-                    LoadingActivity.QMAP_EDIT.commit();
-                    index.remove(i);
-                    title.remove(i);
-                    number.remove(i);
-                    adapter.notifyDataSetChanged();
+        databaseReference.addValueEventListener(
+                new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        for (DataSnapshot child : dataSnapshot.getChildren()) {
+                            String store = child.getKey();
+                            Object num =child.getValue();
+                            QMarker temp = marker.get(Integer.parseInt(store) - 1);
+                            title.add(temp.getName());
+                            number.add(num.toString());
+                        }
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+                                adapter.notifyDataSetChanged();
+                            }
+                        });
+                    }
 
-                }
-            });
-        }
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+
+                    }
+                });
+
     }
 
 

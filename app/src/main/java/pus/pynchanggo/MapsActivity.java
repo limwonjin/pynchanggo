@@ -27,14 +27,12 @@ import com.google.android.gms.maps.GoogleMap.OnMarkerClickListener;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.maps.android.clustering.ClusterItem;
 import com.google.maps.android.clustering.ClusterManager;
 
 import java.util.ArrayList;
 
-public class MapsActivity extends FragmentActivity implements
-        OnMarkerClickListener,
-        OnMapReadyCallback {
-
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap map; // Might be null if Google Play services APK is not available.
     private SensorManager mSensorManager;
@@ -96,44 +94,42 @@ public class MapsActivity extends FragmentActivity implements
         qMarkerVector =(ArrayList<QMarker>)intent.getSerializableExtra("Mark");
         qInfoVector =(ArrayList<TourInfo>)intent.getSerializableExtra("info");
 
-        ClusterManager<TourInfo> mClusterManager = new ClusterManager<>(this, map);
+        ClusterManager<myMarker> mClusterManager = new ClusterManager<>(this, map);
         map.setOnCameraIdleListener(mClusterManager);
-       // map.setOnMarkerClickListener(mClusterManager);
         for(int i=0;i<qInfoVector.size();i++){
-            mClusterManager.addItem(qInfoVector.get(i));
+            TourInfo ifo = qInfoVector.get(i);
+            mClusterManager.addItem(new myMarker(ifo.getLng(),ifo.getLat(),ifo.getTitle(),0,i));
         }
 
         for(int i = 0;i<qMarkerVector.size();i++){
             QMarker temp = qMarkerVector.get(i);
-            map.addMarker(new MarkerOptions()
-                    .position(new LatLng(temp.getLat(), temp.getLng()))
-                    .title(temp.getName())
-                    .snippet(String.valueOf(temp.getKeynum()))).setTag(1);
-        }
-       map.setOnMarkerClickListener(this);
-    }
+            mClusterManager.addItem(new myMarker(temp.getLat(),temp.getLng(),temp.getName(),1,i));
 
-    /** Called when the user clicks a marker. */
-    @Override
-    public boolean onMarkerClick(final Marker marker) {
-        //마커 구분하기
-        Integer mi = (Integer)marker.getTag();
-        if(mi==1) { // mmker pop up 창 띄우기
-            Intent popup = new Intent(MapsActivity.this, MakerPopUp.class);
-            popup.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-            QMarker pickq = qMarkerVector.get(Integer.valueOf(marker.getSnippet()) - 1);
-            popup.putExtra("pickm", pickq);
-            startActivity(popup);
-        }else{
-            Intent popup = new Intent(MapsActivity.this, TourInfoPopUp.class);
-            popup.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-            TourInfo picki = qInfoVector.get(Integer.valueOf(marker.getSnippet()));
-            popup.putExtra("picki", picki);
-            startActivity(popup);
         }
-        return false;
+        mClusterManager.setOnClusterItemClickListener(mClusterItemClickListener);
+        map.setOnMarkerClickListener(mClusterManager);
     }
+    public ClusterManager.OnClusterItemClickListener<myMarker> mClusterItemClickListener = new ClusterManager.OnClusterItemClickListener<myMarker>() {
+        @Override
+        public boolean onClusterItemClick(myMarker item) {
+            int tags = item.getTag();
+            if(tags==1){
+                Intent popup = new Intent(MapsActivity.this, MakerPopUp.class);
+                popup.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                QMarker pickq = qMarkerVector.get(item.getNum());
+                popup.putExtra("pickm", pickq);
+                startActivity(popup);
+            }else{
+                Intent popup = new Intent(MapsActivity.this, TourInfoPopUp.class);
+                popup.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                TourInfo picki = qInfoVector.get(item.getNum());
+                popup.putExtra("picki", picki);
+                startActivity(popup);
+            }
 
+            return true;
+        }
+    };
 
 
     private void startLocationService() {
@@ -200,6 +196,24 @@ public class MapsActivity extends FragmentActivity implements
         return super.onOptionsItemSelected(item);
     }
 
+    public class myMarker implements ClusterItem{
+        private LatLng position;
+        private String title;
+        private int tag;
+        private int num;
+        public myMarker(double lat, double lng, String titles,int tag ,int num ){
+            this.position = new LatLng(lat,lng);
+            this.title = titles;
+            this.tag= tag;
+            this.num = num;
+        }
+        @Override
+        public LatLng getPosition(){ return position; }
+        public int getTag(){return tag;}
+        public int getNum(){return num;}
+
+
+    }
 }
 
 

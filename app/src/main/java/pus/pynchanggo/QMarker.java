@@ -15,6 +15,7 @@ public class QMarker implements Serializable,ClusterItem {
     private double lng;
     private String name;
 
+
     public QMarker(){}
 
     public QMarker(String info, int keynum, double lat, double lng, String name){

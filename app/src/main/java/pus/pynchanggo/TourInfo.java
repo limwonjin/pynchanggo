@@ -27,6 +27,7 @@ public class TourInfo implements Serializable ,ClusterItem{
     public double getLat(){return lat;}
     public double getLng(){return lng;}
     public String getImageUrl(){return imageUrl;}
+
     @Override
     public LatLng getPosition() {
         return new LatLng(lng,lat);

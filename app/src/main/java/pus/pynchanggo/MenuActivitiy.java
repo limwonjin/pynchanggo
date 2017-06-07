@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -128,7 +129,8 @@ class MyAdapter extends BaseAdapter {
 
         TextView tvt = (TextView) convertView.findViewById(R.id.tv_qtitle);
         TextView tvn = (TextView) convertView.findViewById(R.id.tv_qnum);
-        tvt.setText(title.get(position));
+        String name = title.get(position);
+        tvt.setText(name);
         tvn.setText(number.get(position));
 
         return convertView;

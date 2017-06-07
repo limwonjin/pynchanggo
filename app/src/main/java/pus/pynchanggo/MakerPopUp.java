@@ -111,7 +111,7 @@ public class MakerPopUp extends Activity implements GestureDetector.OnGestureLis
     }
 
     public void setremind(String s){
-        tv_remind.setText(s + " 명 남았습니다.");
+        tv_remind.setText("대기인원 : "+ s );
     }
     public void setturn(String me){
         frontview.setVisibility(View.GONE);

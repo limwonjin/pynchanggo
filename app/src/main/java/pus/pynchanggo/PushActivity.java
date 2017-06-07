@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -25,50 +26,25 @@ import java.util.Iterator;
  */
 public class PushActivity extends Activity {
 
-    TextView tv_title, tv_info, tv_num, tv_remind;
-    private ImageButton btn_exit;
-    private ImageView frontview;
-    private ImageView backview;
+    TextView tv_title, tv_num, tv_remind;
     private  ArrayList<QMarker> marker;
     private  ArrayList<TourInfo> info;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_makerpopup);
+        setContentView(R.layout.activity_push);
         Intent intent = getIntent();
         int keyn = Integer.valueOf(intent.getStringExtra("key")) - 1;
         marker = (ArrayList<QMarker>) intent.getSerializableExtra("Mark");
         info =  (ArrayList<TourInfo>) intent.getSerializableExtra("info");
 
         QMarker q = marker.get(keyn);
-        tv_title = (TextView) findViewById(R.id.tv_title);
-        tv_info = (TextView) findViewById(R.id.tv_info);
-        tv_num = (TextView) findViewById(R.id.tv_num);
-        tv_remind = (TextView) findViewById(R.id.tv_remind);
-        btn_exit = (ImageButton)findViewById(R.id.btn_exit);
-        frontview =(ImageView)findViewById(R.id.front);
-        backview =(ImageView)findViewById(R.id.back);
+        tv_title = (TextView) findViewById(R.id.tv_ptitle);
+        tv_num = (TextView) findViewById(R.id.tv_pnum);
+        tv_remind = (TextView) findViewById(R.id.tv_prm);
 
-        frontview.setVisibility(View.GONE);
-        backview.setVisibility(View.VISIBLE);
         tv_title.setText(q.getName());
-        tv_info.setText(q.getInfo());
-        tv_title.setTextColor(Color.parseColor("#000000"));
-        tv_info.setTextColor(Color.parseColor("#000000"));
-        tv_remind.setTextColor(Color.parseColor("#000000"));
-
-        btn_exit.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent gointent = new Intent(PushActivity.this, MapsActivity.class);
-                gointent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-                gointent.putExtra("Mark", marker);
-                gointent.putExtra("info",info);
-                startActivity(gointent);
-                finish();
-            }
-        });
 
         FirebaseDatabase firebaseDatabase = FirebaseDatabase.getInstance();
         final String id = FirebaseInstanceId.getInstance().getToken();
@@ -95,7 +71,22 @@ public class PushActivity extends Activity {
     }
 
     public void setremind(String s, String num) {
-        tv_remind.setText(s + " 명 남았습니다.");
+        tv_remind.setText("대기인원 : "+ s );
         tv_num.setText(num);
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_BACK:
+                Intent gointent = new Intent(PushActivity.this, MapsActivity.class);
+                gointent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                gointent.putExtra("Mark", marker);
+                gointent.putExtra("info",info);
+                startActivity(gointent);
+                finish();
+                return true;
+        }
+        return super.onKeyDown(keyCode, event);
     }
 }

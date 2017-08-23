@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_camera"
+            android:icon="@drawable/house"
+            android:title="홈 화면" />
+        <item
+            android:id="@+id/nav_gallery"
+            android:icon="@drawable/qrcode"
+            android:title="QR코드" />
+        <item
+            android:id="@+id/nav_slideshow"
+            android:icon="@drawable/nfc"
+            android:title="NFC생성" />
+        <item
+            android:id="@+id/nav_manage"
+            android:icon="@drawable/logout"
+            android:title="로그아웃" />
+    </group>
+</menu>
